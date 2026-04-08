@@ -1,38 +1,50 @@
-# To run and test the code you need to update 4 places:
-# 1. Change MY_EMAIL/MY_PASSWORD to your own details.
-# 2. Go to your email provider and make it allow less secure apps.
-# 3. Update the SMTP ADDRESS to match your email provider.
-# 4. Update birthdays.csv to contain today's month and day.
-# See the solution video in the 100 Days of Python Course for explainations.
-
-
-from datetime import datetime
-import pandas
-import random
+# region libraries
 import smtplib
+import datetime as dt
+import random
 import os
-
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
-
-today = datetime.now()
-today_tuple = (today.month, today.day)
-
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
-
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
+# endregion
+# region CONSTANTS and variables
+G_ADDRESS = os.environ.get("MY_EMAIL")
+G_PASSWORD = os.environ.get("MY_PASSWORD")
+O_ADDRESS = os.environ.get("O_EMAIL")
+QUOTES = "quotes.txt"
+quote = ""
+now = dt.datetime.now()
+day_of_the_week = now.weekday()
+# endregion
+# region Functions
+def write_text():
+    """Chooses quote from file, returns it as quote variable."""
+    global quote
+    quotes_list = None
+    with open(file=QUOTES) as data:
+        quotes_list = data.readlines()
+        quote = random.choice(quotes_list)
+        return quote
+def send_message():
+    """Connects to SMTP with login given in CONSTANTS, uses the global quote created in the write_text() function."""
+    global quote
+    with smtplib.SMTP("smtp.gmail.com") as connection:
         connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
+        connection.login(user = G_ADDRESS, password = G_PASSWORD)
         connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
+            from_addr = G_ADDRESS,
+            to_addrs = O_ADDRESS,
+            msg = f"Subject: First Test\n\n{quote}"
         )
+def check_day():
+    """If the day is Monday, then it sends it to the receiver (value = 0 | Using datetime generated from today in CONSTANTS and variables)."""
+    if day_of_the_week == 0:
+        write_text()
+        send_message()
+# endregion
+# region Main
+check_day()
+# endregion
+
+
+
+
+
+
